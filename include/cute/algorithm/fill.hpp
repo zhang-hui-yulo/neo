@@ -68,7 +68,11 @@ CUTE_HOST_DEVICE
 void
 fill(Tensor<Engine, Layout>& tensor, T const& value, prefer<0>)
 {
+#if !defined(__HIP_PLATFORM_AMD__)
   CUTE_UNROLL
+#else
+  #pragma unroll
+#endif
   for (int i = 0; i < size(tensor); ++i) {
     tensor(i) = value;
   }

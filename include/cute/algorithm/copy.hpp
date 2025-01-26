@@ -54,7 +54,11 @@ copy_if(PrdTensor                    const& pred,
   using SrcType = typename SrcEngine::value_type;
   using DstType = typename DstEngine::value_type;
 
+#if !defined(__HIP_PLATFORM_AMD__)
   CUTE_UNROLL
+#else
+  #pragma unroll
+#endif
   for (int i = 0; i < size(dst); ++i) {
     if (pred(i)) {
       dst(i) = static_cast<DstType>(static_cast<SrcType>(src(i)));

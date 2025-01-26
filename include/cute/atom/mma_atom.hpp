@@ -1111,6 +1111,6 @@ print_svg(TiledMMA<Args...> const &mma) {
 #include <cute/atom/mma_traits_sm90.hpp>
 #include <cute/atom/mma_traits_sm90_gmma.hpp>
 #else
-#include <cute/atom/mma_traits_gfx10.hpp>
+#include <cute/atom/mma_traits_gfx11.hpp>
 #endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////
