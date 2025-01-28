@@ -5,7 +5,7 @@
 #include <cute/tensor.hpp>
 
 
-template <typename T, int kTileM, int kTileN, int kTileK, typename TiledMMA>
+template <typename T, int kTileM, int kTileN, int kTileK, typename TiledMMA, typename G2RCopyAtomA, typename G2RCopyAtomB>
 __global__ void gemm_simple(T* Cptr, const T* Aptr, const T* Bptr, int m, int n, int k) {
     using namespace cute;
 
@@ -32,12 +32,23 @@ __global__ void gemm_simple(T* Cptr, const T* Aptr, const T* Bptr, int m, int n,
 
     clear(tCrC);
 
+    // gmem -> lds 128 -> reg
+    auto g2r_tiled_copy_a = make_tiled_copy_A(G2RCopyAtomA{}, tiled_mma);
+    auto g2r_thr_copy_a = g2r_tiled_copy_a.get_slice(threadIdx.x);
+    auto tAgA_view = g2r_thr_copy_a.retile_S(tAgA);  // ? (CPY, CPY_M, CPY_K, kStage)
+    auto tArA_view = g2r_thr_copy_a.retile_D(tArA);  // ? (CPY, CPY_M, CPY_K)
+
+    auto g2r_tiled_copy_b = make_tiled_copy_B(G2RCopyAtomB{}, tiled_mma);
+    auto g2r_thr_copy_b = g2r_tiled_copy_b.get_slice(threadIdx.x);
+    auto tBgB_view = g2r_thr_copy_b.retile_S(tBgB);  // ? (CPY, CPY_M, CPY_K, kStage)
+    auto tBrB_view = g2r_thr_copy_a.retile_D(tBrB);  // ? (CPY, CPY_M, CPY_K)
+
     int num_tile_k = size<2>(gA);
 
     CUTE_UNROLL
     for (int itile = 0; itile < num_tile_k; ++itile) {
-        copy(tAgA(_, _, _, itile), tArA);
-        copy(tBgB(_, _, _, itile), tBrB);
+        copy(g2r_tiled_copy_a, tAgA_view(_, _, _, itile), tArA_view);
+        copy(g2r_tiled_copy_b, tBgB_view(_, _, _, itile), tBrB_view);
 
         gemm(tiled_mma, tCrC, tArA, tBrB, tCrC);
     }
@@ -94,10 +105,13 @@ int main() {
     constexpr int kTileN = 128;
     constexpr int kTileK = 32;
 
+    using G2RCopyAtomA = Copy_Atom<UniversalCopy<cute::uint128_t>, T>;
+    using G2RCopyAtomB = G2RCopyAtomA;
+
     dim3 block(size(MMA{}));
     dim3 grid(n / kTileN, m / kTileM);
     for (int i = 0; i < 100; ++i) {
-        gemm_simple<T, kTileM, kTileN, kTileK, MMA> <<<grid, block>>> (d_C.data().get(), d_A.data().get(), d_B.data().get(), m, n, k);
+        gemm_simple<T, kTileM, kTileN, kTileK, MMA, G2RCopyAtomA, G2RCopyAtomB> <<<grid, block>>> (d_C.data().get(), d_A.data().get(), d_B.data().get(), m, n, k);
     }
     hipDeviceSynchronize();
     auto err = hipGetLastError();
