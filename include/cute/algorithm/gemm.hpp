@@ -290,17 +290,9 @@ gemm(MMA_Atom<MMA>       const& mma,
   {
 #if 1 // NOTE: Row- vs Col- major could depend on the C-matrix order... (which we can test)
     // Row-major serpentine iteration
-  #if !defined(__HIP_PLATFORM_AMD__)
     CUTE_UNROLL
-  #else
-    #pragma unroll
-  #endif
     for (int m = 0; m < M; ++m) {
-  #if !defined(__HIP_PLATFORM_AMD__)
       CUTE_UNROLL
-  #else
-      #pragma unroll
-  #endif
       for (int n = 0; n < N; ++n) {
         int ns = (m & 1) ? N-1-n : n;  // Serpentine coordinate
         gemm(mma, D(_,m,ns), A(_,m), B(_,ns), C(_,m,ns));
@@ -324,17 +316,9 @@ gemm(MMA_Atom<MMA>       const& mma,
   {
 #if 1  // NOTE: Row- vs Col- major could depend on the C-matrix order... (which we can test)
     // Row-major kinked serpentine iteration
-  #if !defined(__HIP_PLATFORM_AMD__)
     CUTE_UNROLL
-  #else
-    #pragma unroll
-  #endif
     for (int m = 0; m < M; m += 2) {
-    #if !defined(__HIP_PLATFORM_AMD__)
       CUTE_UNROLL
-    #else
-      #pragma unroll
-    #endif
       for (int n = 0; n < N; ++n) {
         int ns = (m & 2) ? N-1-n : n;
         gemm(mma, D(_,m+0,ns), A(_,m+0), B(_,ns), C(_,m+0,ns));
@@ -365,17 +349,9 @@ gemm(MMA_Atom<MMA>       const& mma,
   if constexpr (decltype(size<0>(A))::value * sizeof(typename TA::value_type) == 8 &&
                 decltype(size<0>(B))::value * sizeof(typename TB::value_type) == 4) {
     // Row-major serpentine iteration
-  #if !defined(__HIP_PLATFORM_AMD__)
     CUTE_UNROLL
-  #else
-    #pragma unroll
-  #endif
     for (int m = 0; m < M; ++m) {
-    #if !defined(__HIP_PLATFORM_AMD__)
       CUTE_UNROLL
-    #else
-      #pragma unroll
-    #endif
       for (int n = 0; n < N; ++n) {
         int ns = (m & 1) ? N-1-n : n;  // Serpentine coordinate
         gemm(mma, D(_,m,ns), A(_,m), B(_,ns), C(_,m,ns));
@@ -386,17 +362,9 @@ gemm(MMA_Atom<MMA>       const& mma,
   if constexpr (decltype(size<0>(A))::value * sizeof(typename TA::value_type) == 4 &&
                 decltype(size<0>(B))::value * sizeof(typename TB::value_type) == 8) {
     // Col-major serpentine iteration
-  #if !defined(__HIP_PLATFORM_AMD__)
     CUTE_UNROLL
-  #else
-    #pragma unroll
-  #endif
     for (int n = 0; n < N; ++n) {
-    #if !defined(__HIP_PLATFORM_AMD__)
       CUTE_UNROLL
-    #else
-      #pragma unroll
-    #endif
       for (int m = 0; m < M; ++m) {
         int ms = (n & 1) ? M-1-m : m;  // Serpentine coordinate
         gemm(mma, D(_,ms,n), A(_,ms), B(_,n), C(_,ms,n));
@@ -406,17 +374,9 @@ gemm(MMA_Atom<MMA>       const& mma,
   // Fallback to serpentine loop
   {
     // Col-major serpentine iteration
-  #if !defined(__HIP_PLATFORM_AMD__)
     CUTE_UNROLL
-  #else
-    #pragma unroll
-  #endif
     for (int n = 0; n < N; ++n) {
-    #if !defined(__HIP_PLATFORM_AMD__)
       CUTE_UNROLL
-    #else
-      #pragma unroll
-    #endif
       for (int m = 0; m < M; ++m) {
         int ms = (n & 1) ? M-1-m : m;  // Serpentine coordinate
         gemm(mma, D(_,ms,n), A(_,ms), B(_,n), C(_,ms,n));
@@ -449,11 +409,7 @@ gemm(MMA_Atom<MMA>       const& mma,
   CUTE_STATIC_ASSERT_V(size<0>(C) == size<0>(D) && size<1>(C) == size<1>(D) && size<2>(C) == size<2>(D));
   auto K = size<2>(A);
 
-#if !defined(__HIP_PLATFORM_AMD__)
   CUTE_UNROLL
-#else
-  #pragma unroll
-#endif
   for (int k = 0; k < K; ++k) {
     gemm(mma, D, A(_,_,k), B(_,_,k), C);
   }

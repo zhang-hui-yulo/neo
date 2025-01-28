@@ -34,7 +34,7 @@ __global__ void gemm_simple(T* Cptr, const T* Aptr, const T* Bptr, int m, int n,
 
     int num_tile_k = size<2>(gA);
 
-    #pragma unroll
+    CUTE_UNROLL
     for (int itile = 0; itile < num_tile_k; ++itile) {
         cute::copy(tAgA(_, _, _, itile), tArA);
         cute::copy(tBgB(_, _, _, itile), tBrB);
@@ -97,7 +97,7 @@ int main() {
     dim3 block(size(MMA{}));
     dim3 grid(n / kTileN, m / kTileM);
     for (int i = 0; i < 100; ++i) {
-        gemm_simple<T, kTileM, kTileN, kTileK, MMA> << <grid, block >> > (d_C.data().get(), d_A.data().get(), d_B.data().get(), m, n, k);
+        gemm_simple<T, kTileM, kTileN, kTileK, MMA> <<<grid, block>>> (d_C.data().get(), d_A.data().get(), d_B.data().get(), m, n, k);
     }
     hipDeviceSynchronize();
     auto err = hipGetLastError();

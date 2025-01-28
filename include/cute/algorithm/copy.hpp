@@ -54,11 +54,7 @@ copy_if(PrdTensor                    const& pred,
   using SrcType = typename SrcEngine::value_type;
   using DstType = typename DstEngine::value_type;
 
-#if !defined(__HIP_PLATFORM_AMD__)
   CUTE_UNROLL
-#else
-  #pragma unroll
-#endif
   for (int i = 0; i < size(dst); ++i) {
     if (pred(i)) {
       dst(i) = static_cast<DstType>(static_cast<SrcType>(src(i)));
@@ -210,12 +206,12 @@ copy(Copy_Atom<CopyArgs...>       const& copy_atom,
       CUTE_STATIC_ASSERT_V(shape<0>(dst_c) == shape<0>(dst));
       CUTE_STATIC_ASSERT_V(shape<0>(src_c) == shape<0>(src));
 
-      #pragma unroll
+      CUTE_UNROLL
       for (int i = 0; i < size<1>(dst_c); ++i) {
         copy_atom.call(src_c(_,i), dst_c(_,i));
       }
     } else {
-      #pragma unroll
+      CUTE_UNROLL
       for (int i = 0; i < size<1>(dst_v); ++i) {
         copy_atom.call(src_v(_,i), dst_v(_,i));
       }

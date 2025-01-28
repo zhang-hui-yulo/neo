@@ -47,11 +47,7 @@ CUTE_HOST_DEVICE constexpr
 void
 for_each(Tensor<Engine,Layout> const& tensor, UnaryOp&& op)
 {
-#if !defined(__HIP_PLATFORM_AMD__)
   CUTE_UNROLL
-#else
-  #pragma unroll
-#endif
   for (int i = 0; i < size(tensor); ++i) {
     op(tensor(i));
   }
@@ -62,11 +58,7 @@ CUTE_HOST_DEVICE constexpr
 void
 for_each(Tensor<Engine,Layout>& tensor, UnaryOp&& op)
 {
-#if !defined(__HIP_PLATFORM_AMD__)
   CUTE_UNROLL
-#else
-  #pragma unroll
-#endif
   for (int i = 0; i < size(tensor); ++i) {
     op(tensor(i));
   }
@@ -91,11 +83,7 @@ CUTE_HOST_DEVICE constexpr
 void
 transform(Tensor<Engine,Layout>& tensor, UnaryOp&& op)
 {
-#if !defined(__HIP_PLATFORM_AMD__)
   CUTE_UNROLL
-#else
-  #pragma unroll
-#endif
   for (int i = 0; i < size(tensor); ++i) {
     tensor(i) = op(tensor(i));
   }
@@ -120,11 +108,7 @@ transform(Tensor<EngineIn, LayoutIn > const& tensor_in,
           Tensor<EngineOut,LayoutOut>      & tensor_out,
           UnaryOp&& op)
 {
-#if !defined(__HIP_PLATFORM_AMD__)
   CUTE_UNROLL
-#else
-  #pragma unroll
-#endif
   for (int i = 0; i < size(tensor_in); ++i) {
     tensor_out(i) = op(tensor_in(i));
   }
@@ -158,11 +142,7 @@ transform(Tensor<EngineIn1,LayoutIn1> const& tensor_in1,
           Tensor<EngineOut,LayoutOut>      & tensor_out,
           BinaryOp&& op)
 {
-#if !defined(__HIP_PLATFORM_AMD__)
   CUTE_UNROLL
-#else
-  #pragma unroll
-#endif
   for (int i = 0; i < size(tensor_in1); ++i) {
     tensor_out(i) = op(tensor_in1(i), tensor_in2(i));
   }

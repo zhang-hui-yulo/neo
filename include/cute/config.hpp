@@ -50,10 +50,7 @@
   (defined(__CUDA_ARCH__) || defined(_NVHPC_CUDA))
 #  define CUTE_UNROLL    #pragma unroll
 #  define CUTE_NO_UNROLL #pragma unroll 1
-#elif defined(__HIP_DEVICE_COMPILE__)
-#  define CUTE_UNROLL    #pragma unroll
-#  define CUTE_NO_UNROLL #pragma unroll 1
-#elif defined(__CUDACC_RTC__) || (defined(__clang__) && !defined(__HIP_PLATFORM_AMD__))
+#elif defined(__CUDACC_RTC__) || defined(__HIP_PLATFORM_AMD__)
 #  define CUTE_UNROLL    _Pragma("unroll")
 #  define CUTE_NO_UNROLL _Pragma("unroll 1")
 #else

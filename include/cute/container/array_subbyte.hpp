@@ -431,11 +431,7 @@ public:
   // Efficient clear method
   CUTE_HOST_DEVICE constexpr
   void clear() {
-#if !defined(__HIP_PLATFORM_AMD__)
     CUTE_UNROLL
-#else
-    #pragma unroll
-#endif
     for (size_type i = 0; i < StorageElements; ++i) {
       storage[i] = storage_type(0);
     }
@@ -443,11 +439,7 @@ public:
 
   CUTE_HOST_DEVICE constexpr
   void fill(T const& value) {
-#if !defined(__HIP_PLATFORM_AMD__)
     CUTE_UNROLL
-#else
-    #pragma unroll
-#endif
     for (size_type i = 0; i < N; ++i) {
       at(i) = value;
     }
