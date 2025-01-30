@@ -353,8 +353,6 @@ int main() {
             <<<grid, block, shm_size>>> (Dptr.data().get(), Aptr.data().get(), Bptr.data().get(), M, N, K);
     }
 
-    hipblasDestroy(handle);
-
     Dptr_host = Dptr;
     Dptr_host_blas = Dptr_cublas;
 
@@ -386,4 +384,74 @@ int main() {
 
     printf("cublas:\n");
     print_tensor(t32x32_blas);
+
+    // measure the performance
+    hipEvent_t start, stop;
+    hipEventCreate(&start);
+    hipEventCreate(&stop);
+
+    constexpr int warmup = 100;
+    constexpr int ntime = 1000;
+    hipFuncSetAttribute((const void*)gemm_multi_stage<decltype(gemm_config)>,
+        hipFuncAttributeMaxDynamicSharedMemorySize, shm_size);
+
+    // gemm warmup
+    for (int i = 0; i < warmup; ++i) {
+        gemm_multi_stage<decltype(gemm_config)>
+            <<<grid, block, shm_size>>> (Dptr.data().get(), Aptr.data().get(), Bptr.data().get(), M, N, K);
+    }
+
+    float time_mma = 0;
+
+    for (int i = 0; i < ntime; ++i) {
+        hipEventRecord(start);
+
+        gemm_multi_stage<decltype(gemm_config)>
+            <<<grid, block, shm_size>>> (Dptr.data().get(), Aptr.data().get(), Bptr.data().get(), M, N, K);
+
+        hipEventRecord(stop);
+        hipEventSynchronize(stop);
+        float elapsed = 0;
+        hipEventElapsedTime(&elapsed, start, stop);
+        time_mma += elapsed;
+
+        auto err = hipGetLastError();
+        if (err != hipSuccess) {
+            printf_fail("err = %d, str = %s\n", err, hipGetErrorString(err));
+        }
+    }
+
+    // cublas warmup
+    for (int i = 0; i < warmup; ++i) {
+        hipblasStatus_t ret = hipblasHgemm(handle, HIPBLAS_OP_T, HIPBLAS_OP_N, N, M, K,
+            (hipblasHalf*)&alpha, (hipblasHalf*)Bptr.data().get(), K, (hipblasHalf*)Aptr.data().get(), K,
+            (hipblasHalf*)&beta, (hipblasHalf*)Dptr_cublas.data().get(), N);
+    }
+
+    float time_hipblas = 0;
+
+    for (int i = 0; i < ntime; ++i) {
+        hipEventRecord(start);
+
+        hipblasStatus_t ret = hipblasHgemm(handle, HIPBLAS_OP_T, HIPBLAS_OP_N, N, M, K,
+            (hipblasHalf*)&alpha, (hipblasHalf*)Bptr.data().get(), K, (hipblasHalf*)Aptr.data().get(), K,
+            (hipblasHalf*)&beta, (hipblasHalf*)Dptr_cublas.data().get(), N);
+
+        hipEventRecord(stop);
+        hipEventSynchronize(stop);
+        float elapsed = 0;
+        hipEventElapsedTime(&elapsed, start, stop);
+        time_hipblas += elapsed;
+
+        auto err = hipGetLastError();
+        if (err != hipSuccess) {
+            printf_fail("err = %d, str = %s\n", err, hipGetErrorString(err));
+        }
+    }
+
+    hipEventDestroy(start);
+    hipEventDestroy(stop);
+    hipblasDestroy(handle);
+
+    printf_ok("check ok, hip mma = %f, hipblas = %f\n", time_mma / ntime, time_hipblas / ntime);
 }
