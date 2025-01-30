@@ -203,9 +203,9 @@ struct GemmConfig {
     static constexpr int kTileK = kTileK_;
     static constexpr int kSmemLayoutCBatch = kSmemLayoutCBatch_;
 
-    static constexpr int kShmLoadSwizzleM = 3;
+    static constexpr int kShmLoadSwizzleM = 4;
     static constexpr int kShmLoadSwizzleS = 3;
-    static constexpr int kShmLoadSwizzleB = 3;
+    static constexpr int kShmLoadSwizzleB = 2;
 
     using SmemLayoutAtom = decltype(composition(
         Swizzle<kShmLoadSwizzleB, kShmLoadSwizzleM, kShmLoadSwizzleS>{},
@@ -293,9 +293,9 @@ int main() {
     srand(10086);
 
     // default;
-    int M = 81920;
-    int N = 256;
-    int K = 256;
+    int M = 2048;
+    int N = 2048;
+    int K = 1024;
 
     int nt = 11;
 
@@ -453,5 +453,5 @@ int main() {
     hipEventDestroy(stop);
     hipblasDestroy(handle);
 
-    printf_ok("check ok, hip mma = %f, hipblas = %f\n", time_mma / ntime, time_hipblas / ntime);
+    printf_ok("check ok, my hip mma = %f ms, hipblas = %f ms\n", time_mma / ntime, time_hipblas / ntime);
 }
