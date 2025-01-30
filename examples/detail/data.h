@@ -1,5 +1,6 @@
-#include <cuda.h>
+#include <hip/hip_runtime.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 
 template <typename T>
@@ -152,19 +153,19 @@ template <typename T>
 void gpu_compare(const T *x, const T *y, int n, float threshold) {
   int *num_count;
   float *max_error;
-  cudaMalloc(&num_count, sizeof(int));
-  cudaMalloc(&max_error, sizeof(float));
-  cudaMemset(num_count, 0, sizeof(int));
-  cudaMemset(max_error, 0, sizeof(float));
+  hipMalloc(&num_count, sizeof(int));
+  hipMalloc(&max_error, sizeof(float));
+  hipMemset(num_count, 0, sizeof(int));
+  hipMemset(max_error, 0, sizeof(float));
 
   dim3 block(256);
   dim3 grid((n + block.x - 1) / block.x);
   gpu_compare_kernel<<<grid, block>>>(x, y, n, threshold, num_count, max_error);
   int num = 0;
   float error = 0;
-  cudaMemcpy(&num, num_count, sizeof(int), cudaMemcpyDeviceToHost);
-  cudaMemcpy(&error, max_error, sizeof(int), cudaMemcpyDeviceToHost);
-  cudaDeviceSynchronize();
+  hipMemcpy(&num, num_count, sizeof(int), hipMemcpyDeviceToHost);
+  hipMemcpy(&error, max_error, sizeof(int), hipMemcpyDeviceToHost);
+  hipDeviceSynchronize();
 
   if (num == 0) {
     printf_ok("check ok, max_error = %f\n", error);
