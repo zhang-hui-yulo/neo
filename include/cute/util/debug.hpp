@@ -35,11 +35,7 @@
  * \brief Debugging and logging functionality
  */
 
-#if defined(__HIP_PLATFORM_AMD__)
 #include <hip/hip_runtime_api.h>
-#else
-#include <cuda_runtime_api.h>
-#endif
 
 #include <cute/config.hpp>
 
@@ -54,7 +50,7 @@ namespace cute
  * Formats and prints the given message to stdout
  */
 #if !defined(CUTE_LOG)
-#  if !defined(__CUDA_ARCH__) || !defined(__HIP_DEVICE_COMPILE__)
+#  if !defined(__HIP_DEVICE_COMPILE__)
 #    define CUTE_LOG(format, ...) printf(format, __VA_ARGS__)
 #  else
 #    define CUTE_LOG(format, ...)                                \
@@ -80,39 +76,21 @@ namespace cute
  * \brief Perror macro with exit
  */
 #if !defined(CUTE_ERROR_EXIT)
-#if !defined(__HIP_PLATFORM_AMD__)
 #  define CUTE_ERROR_EXIT(e)                                         \
       do {                                                           \
-        cudaError_t code = (e);                                      \
-        if (code != cudaSuccess) {                                   \
+        hipError_t  code = (e);                                      \
+        if (code != hipSuccess) {                                   \
           fprintf(stderr, "<%s:%d> %s:\n    %s: %s\n",               \
                   __FILE__, __LINE__, #e,                            \
-                  cudaGetErrorName(code), cudaGetErrorString(code)); \
+                  hipGetErrorName(code), hipGetErrorString(code)); \
           fflush(stderr);                                            \
           exit(1);                                                   \
         }                                                            \
       } while (0)
-#else
-#  define CUTE_ERROR_EXIT(e)                                         \
-      do {                                                           \
-        hipError_t code = (e);                                       \
-        if (code != hipSuccess) {                                    \
-          fprintf(stderr, "<%s:%d> %s:\n    %s: %s\n",               \
-                  __FILE__, __LINE__, #e,                            \
-                  hipGetErrorName(code), hipGetErrorString(code));   \
-          fflush(stderr);                                            \
-          exit(1);                                                   \
-        }                                                            \
-      } while (0)
-#endif
 #endif
 
 #if !defined(CUTE_CHECK_LAST)
-#if !defined(__HIP_PLATFORM_AMD__)
-#  define CUTE_CHECK_LAST() CUTE_ERROR_EXIT(cudaPeekAtLastError()); CUTE_ERROR_EXIT(cudaDeviceSynchronize())
-#else
 #  define CUTE_CHECK_LAST() CUTE_ERROR_EXIT(hipPeekAtLastError()); CUTE_ERROR_EXIT(hipDeviceSynchronize())
-#endif
 #endif
 
 #if !defined(CUTE_CHECK_ERROR)
@@ -144,7 +122,7 @@ CUTE_HOST_DEVICE
 bool
 block([[maybe_unused]] int bid)
 {
-#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
+#if defined(__HIP_DEVICE_COMPILE__)
   return blockIdx.x + blockIdx.y*gridDim.x + blockIdx.z*gridDim.x*gridDim.y == static_cast<unsigned int>(bid);
 #else
   return true;
@@ -155,7 +133,7 @@ CUTE_HOST_DEVICE
 bool
 thread([[maybe_unused]] int tid, [[maybe_unused]] int bid)
 {
-#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
+#if defined(__HIP_DEVICE_COMPILE__)
   return (threadIdx.x + threadIdx.y*blockDim.x + threadIdx.z*blockDim.x*blockDim.y == static_cast<unsigned int>(tid)) && block(bid);
 #else
   return true;

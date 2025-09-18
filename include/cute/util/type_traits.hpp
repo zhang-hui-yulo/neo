@@ -29,14 +29,7 @@
  *
  **************************************************************************************************/
 #pragma once
-
-#if defined(__CUDACC_RTC__)
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
-#include <cuda/std/cstddef>
-#include <cuda/std/cstdint>
-#include <cuda/std/limits>
-#else
+#if !defined(__CUDACC_RTC__)
 #include <type_traits>
 #include <utility>      // tuple_size, tuple_element
 #include <cstddef>      // ptrdiff_t
@@ -91,6 +84,29 @@ using CUTE_STL_NAMESPACE::add_const_t;
 using CUTE_STL_NAMESPACE::remove_const_t;
 using CUTE_STL_NAMESPACE::remove_cv_t;
 using CUTE_STL_NAMESPACE::remove_reference_t;
+
+template <class Src, class Dst>
+struct copy_cv {
+  using type = Dst;
+};
+
+template <class Src, class Dst>
+struct copy_cv<Src const, Dst> {
+  using type = Dst const;
+};
+
+template <class Src, class Dst>
+struct copy_cv<Src volatile, Dst> {
+  using type = Dst volatile;
+};
+
+template <class Src, class Dst>
+struct copy_cv<Src const volatile, Dst> {
+  using type = Dst const volatile;
+};
+
+template <class Src, class Dst>
+using copy_cv_t = typename copy_cv<Src,Dst>::type;
 
 using CUTE_STL_NAMESPACE::extent;
 using CUTE_STL_NAMESPACE::remove_extent;
@@ -154,20 +170,23 @@ using CUTE_STL_NAMESPACE::is_pointer_v;
 using CUTE_STL_NAMESPACE::declval;
 
 template <class T>
-constexpr T&& forward(remove_reference_t<T>& t) noexcept
+CUTE_HOST_DEVICE constexpr
+T&& forward(remove_reference_t<T>& t) noexcept
 {
   return static_cast<T&&>(t);
 }
 
 template <class T>
-constexpr T&& forward(remove_reference_t<T>&& t) noexcept
+CUTE_HOST_DEVICE constexpr
+T&& forward(remove_reference_t<T>&& t) noexcept
 {
   static_assert(! is_lvalue_reference_v<T>, "T cannot be an lvalue reference (e.g., U&).");
   return static_cast<T&&>(t);
 }
 
 template <class T>
-constexpr remove_reference_t<T>&& move(T&& t) noexcept
+CUTE_HOST_DEVICE constexpr
+remove_reference_t<T>&& move(T&& t) noexcept
 {
   return static_cast<remove_reference_t<T>&&>(t);
 }
@@ -219,8 +238,6 @@ struct tuple_size;
 
 template <class T>
 struct tuple_size<T,void_t<typename CUTE_STL_NAMESPACE::tuple_size<T>::type>> : CUTE_STL_NAMESPACE::integral_constant<size_t, CUTE_STL_NAMESPACE::tuple_size<T>::value> {};
-
-// S =  : std::integral_constant<std::size_t, std::tuple_size<T>::value> {};
 
 template <class T>
 constexpr size_t tuple_size_v = tuple_size<T>::value;
